@@ -1,0 +1,114 @@
+---
+title: "AHA"
+author: "302"
+date: '2024-01-18'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r }
+library(ggplot2)
+library(readxl)
+library(limma)
+library(edgeR)
+library(ggplot2)
+library(ggrepel)
+library(DMwR2)
+library(patchwork)
+library(impute)
+library(DMwR2)
+
+
+
+data = read_excel("Proteins_Perseus.xlsx",sheet = 1     )
+data<-data.frame(data)
+
+index<-duplicated(data$Accession)
+print(table(index))
+data<-data[!index,]
+rownames(data)<-data$Accession
+data<-data[,-1]
+head(data)
+
+
+tempOutput<-read.csv("diff_gene.csv")
+
+head(tempOutput)
+data["PF3D7_0526600",]
+
+table(tempOutput$type)
+head(tempOutput)
+
+plot.volc <- ggplot(tempOutput) +
+  geom_point(aes(x = logFC , y = -log10(adj.P.Val), color = type),alpha=0.6, size=0.5) +
+  ggtitle(paste0("AHA ","vs control diff genes")) +
+  xlab("log2 fold change") +
+  ylab("-log10 adjusted p-value")+
+  theme(
+    panel.background = element_rect(fill = "transparent"), # bg of the panel
+    plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
+    #panel.grid.major = element_blank(), # get rid of major grid
+    #panel.grid.minor = element_blank(), # get rid of minor grid
+    legend.background = element_rect(fill = "transparent"), # get rid of legend bg
+    #legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
+  ) +
+  theme(panel.border = element_rect(fill=NA,color="black", size=1, linetype="solid"))+
+  scale_color_manual(values=c("#546de5","#DDDDDD","#DDDDDD"))+
+  geom_hline(yintercept = -log10(0.05),lty=4,lwd=0.8,alpha=0.8)+
+  geom_vline(xintercept = c(-1.5,1.5),lty=4,lwd=0.8,alpha=0.8)+
+  scale_x_continuous(limits = c(-18,18))
+
+print(plot.volc)
+
+
+
+library(viridis)
+data_dn<-tempOutput[tempOutput$type=="Down",]
+head(data_dn)
+
+data_dn_heatmap<-data[data_dn$X,]
+
+head(data_dn_heatmap)
+colnames(data_dn_heatmap)
+data_dn_heatmap<-data_dn_heatmap[,c("DMSO..1","DMSO..2","DMSO..3","ATS_AHA..1","ATS_AHA..2","ATS_AHA..3")]
+
+
+pheatmap(data_dn_heatmap,scale = "row",show_rownames = F,color=viridis(20),cluster_cols = F)
+
+
+library(org.Pf.plasmo.db)
+library(clusterProfiler)
+
+dn_go <- enrichGO(gene = rownames(data_dn_heatmap),
+                  keyType = "SYMBOL",
+                  OrgDb = org.Pf.plasmo.db,
+                  ont = "BP",
+                  pAdjustMethod = "BH",
+                  pvalueCutoff  = 0.5,
+                  qvalueCutoff  = 0.5)
+
+barplot(dn_go,showCategory = 10)
+
+
+dotplot(dn_go,showCategory = 10)
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

@@ -1,0 +1,103 @@
+---
+title: "Fig3"
+author: '302'
+date: '2024-01-18'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+data = read_excel("./list_pro.xlsx",sheet = 1)
+head(data)
+data<-data.frame(data)
+
+colnames(data)
+
+pro_list<-list()
+
+for (i in colnames(data)) {
+  a<-data[,i]
+  pro_list[[i]]<-na.omit(a)
+}
+
+str(pro_list)
+
+R_go <- enrichGO(gene = pro_list$Ring,
+                 keyType = "SYMBOL",
+                 OrgDb = org.Pf.plasmo.db,
+                 ont = "BP",
+                 pAdjustMethod = "BH",
+                 pvalueCutoff  = 0.5,
+                 qvalueCutoff  = 0.5)
+R_go<-pairwise_termsim(R_go)
+emapplot(R_go,showCategory = 10)
+
+S_go <- enrichGO(gene = pro_list$S,
+                 keyType = "SYMBOL",
+                 OrgDb = org.Pf.plasmo.db,
+                 ont = "BP",
+                 pAdjustMethod = "BH",
+                 pvalueCutoff  = 0.5,
+                 qvalueCutoff  = 0.5)
+S_go<-pairwise_termsim(S_go)
+emapplot(S_go,showCategory = 10)
+
+T_go <- enrichGO(gene = pro_list$T,
+                 keyType = "SYMBOL",
+                 OrgDb = org.Pf.plasmo.db,
+                 ont = "BP",
+                 pAdjustMethod = "BH",
+                 pvalueCutoff  = 0.5,
+                 qvalueCutoff  = 0.5)
+T_go<-pairwise_termsim(T_go)
+emapplot(T_go,showCategory = 10)
+
+path<-c("GO:0006518","GO:0006412","GO:0043043","GO:0051603")
+R_data <- R_go@result
+R_data<- data.frame(R_data)
+R_data<-R_data[R_data$ID %in% path,]
+R_data$type<-"Ring"
+
+#
+T_data <- T_go@result
+T_data<- data.frame(T_data)
+T_data<-T_data[T_data$ID %in% path,]
+T_data$type<-"Tro"
+
+#
+S_data <- S_go@result
+S_data<- data.frame(S_data)
+S_data<-S_data[S_data$ID %in% path,]
+S_data$type<-"Sch"
+
+go_data<-rbind(R_data,T_data)
+go_data<-rbind(go_data,S_data)
+head(go_data)
+go_data$type<-factor(go_data$type,levels=c("Ring","Tro","Sch"))
+#
+p<-ggplot(go_data,aes(x=type,y=Description,size=Count,color=-log10(p.adjust)))+geom_point()+
+  scale_color_gradient(low = "blue", high = "red")+theme_bw()+
+  theme(axis.text.y=element_text(size = 12))
+p
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
